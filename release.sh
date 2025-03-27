@@ -14,6 +14,8 @@ IMAGE=${1}
 DH_USER=${2:-lalanza808}
 MONERO_VERSION=v0.18.3.4
 MONERO_BASE=${DH_USER}/monero
+MONERO_COMPILE_VERSION=v0.18.3.4
+MONERO_COMPILE_BASE=${DH_USER}/monero_compile
 EXPORTER_VERSION=1.0.0
 EXPORTER_BASE=${DH_USER}/exporter
 NODEMAPPER_VERSION=1.0.3
@@ -48,6 +50,25 @@ if [[ "${IMAGE}" == "monero" ]]; then
         -t "${MONERO_BASE}:latest" \
         -f dockerfiles/monero . \
         --push
+fi
+
+if [[ "${IMAGE}" == "monero_compile" ]]; then
+    echo -e "[+] Building monero_compile multi-arch (amd64 & arm64)"
+    # Build & push images separately
+    docker buildx build --platform linux/amd64 \
+      -t "${MONERO_COMPILE_BASE}:${MONERO_COMPILE_VERSION}-amd64" \
+      -f dockerfiles/monero_compile . --build-arg ARCH=x86_64 --push
+
+    docker buildx build --platform linux/arm64 \
+      -t "${MONERO_COMPILE_BASE}:${MONERO_COMPILE_VERSION}-arm64" \
+      -f dockerfiles/monero_compile . --build-arg ARCH=aarch64 --push
+
+    # Create and push a multi-arch manifest
+    docker buildx imagetools create \
+      -t "${MONERO_COMPILE_BASE}:${MONERO_COMPILE_VERSION}" \
+      -t "${MONERO_COMPILE_BASE}:latest" \
+      "${MONERO_COMPILE_BASE}:${MONERO_COMPILE_VERSION}-amd64" \
+      "${MONERO_COMPILE_BASE}:${MONERO_COMPILE_VERSION}-arm64"
 fi
 
 if [[ "${IMAGE}" == "tor" ]]; then
