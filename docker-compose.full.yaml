@@ -93,7 +93,7 @@ services:
         condition: service_started
     environment:
       NODE_HOST: monerod
-      NODE_PORT: 18083
+      NODE_PORT: ${UNRESTRICTED_PORT:-18083}
     # ports:
     #   - 127.0.0.1:${MAPPER_PORT:-5000}:5000
     networks:
@@ -105,8 +105,14 @@ services:
       context: .
       dockerfile: dockerfiles/tor
     restart: unless-stopped
+    volumes:
+      - ./TorHiddenService:/var/lib/tor/monerod
     # ports:
       # - 127.0.0.1:9050:9050
+    environment:
+      TOR_RESTRICTED_PORT: ${TOR_RESTRICTED_PORT}
+      TOR_ANONYMOUS_INBOUND_PORT: ${TOR_ANONYMOUS_INBOUND_PORT}
+      RESTRICTED_PORT: ${RESTRICTED_PORT:-18081}
     networks:
       tor_net:
         ipv4_address: 172.31.255.250
@@ -138,31 +144,15 @@ services:
         condition: service_started
     volumes:
       - ${DATA_DIR:-./data}:/data
+      - ./TorHiddenService:/var/lib/tor/monerod
     ports:
       - ${P2P_PORT:-18080}:18080                    # p2p
       - ${RESTRICTED_PORT:-18081}:18081             # restricted rpc
       - 127.0.0.1:${ZMQ_PORT:-18082}:18082          # zmq
       - 127.0.0.1:${UNRESTRICTED_PORT:-18083}:18083 # unrestricted rpc
-    command:
-      - monerod
-      - --data-dir=/data
-      - --p2p-bind-ip=0.0.0.0
-      - --p2p-bind-port=18080
-      - --rpc-restricted-bind-ip=0.0.0.0
-      - --rpc-restricted-bind-port=18081
-      - --zmq-rpc-bind-ip=0.0.0.0
-      - --zmq-rpc-bind-port=18082
-      - --rpc-bind-ip=0.0.0.0
-      - --rpc-bind-port=18083
-      - --non-interactive
-      - --confirm-external-bind
-      - --public-node
-      - --log-level=0
-      - --rpc-ssl=disabled
-      - --proxy=172.31.255.250:9050
-      - --ban-list=/ban_list.txt
-      - --tx-proxy=tor,172.31.255.250:9050,disable_noise,24
-      - --tx-proxy=i2p,172.31.255.251:4447,disable_noise,24
+    environment:
+      TOR_ANONYMOUS_INBOUND_PORT: ${TOR_ANONYMOUS_INBOUND_PORT}
+      TOR_RESTRICTED_PORT: ${TOR_RESTRICTED_PORT}
     networks:
       - tor_net
     <<: *log-config
