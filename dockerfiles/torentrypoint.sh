@@ -3,6 +3,8 @@
 chown -R root:root /var/lib/tor/
 chmod 700 -R /var/lib/tor/monerod
 
+cp -f /torrc /etc/tor/torrc
+
 if [ -n "$TOR_RESTRICTED_PORT" ] || [ -n "$TOR_ANONYMOUS_INBOUND_PORT" ]; then
   echo "HiddenServiceDir /var/lib/tor/monerod" >> /etc/tor/torrc
 
